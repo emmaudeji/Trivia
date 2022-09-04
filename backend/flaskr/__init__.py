@@ -4,14 +4,14 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
-
 from models import setup_db, Question, Category
+
+db = SQLAlchemy()
 
 QUESTIONS_PER_PAGE = 10
 
-# Pagination function
 
-
+# paginate questions in a list of 10 per page.
 def paginate(request, all_questions):
     page = request.args.get('page', 1, type=int)
     start = (page - 1) * QUESTIONS_PER_PAGE
@@ -86,10 +86,12 @@ def create_app(test_config=None):
     @app.route('/questions')
     def get_questions():
         all_questions = Question.query.all()
+        # paginate questions in a list of 10 per page.
         formatted_questions = paginate(request, all_questions)
         categories = Category.query.all()
         category_dict = {category.id: category.type for category in categories}
 
+        # no questions are found, abort with a 404 error.
         if len(formatted_questions) == 0:
             abort(404)
 
@@ -109,6 +111,29 @@ def create_app(test_config=None):
     TEST: When you click the trash icon next to a question, the question will be removed.
     This removal will persist in the database and when you refresh the page.
     """
+
+    # Delete end-point
+    # returns: deleted question id
+    @app.route('/questions/<question_id>', methods=['DELETE'])
+    def delete_question(question_id):
+        '''Delete a question from the database'''
+        try:
+            question = Question.query.filter(
+                Question.id == question_id).one_or_none()
+            # return 404 if question is not available
+            if question is None:
+                abort(404)
+
+            # result
+            question.delete()
+            return jsonify({
+                'success': True,
+                'deleted': question_id
+            })
+        except:
+            # rollback and close the connection
+            db.session.rollback()
+            abort(422)
 
     """
     @TODO:
