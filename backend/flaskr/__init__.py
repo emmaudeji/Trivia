@@ -4,9 +4,24 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
+
 from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
+
+# Pagination function
+
+
+def paginate_questions(request, all_questions):
+    page = request.args.get('page', 1, type=int)
+    start = (page - 1) * QUESTIONS_PER_PAGE
+    end = start + QUESTIONS_PER_PAGE
+
+    questions = [question.format() for question in all_questions]
+    current_questions = questions[start:end]
+
+    return current_questions
+
 
 def create_app(test_config=None):
     # create and configure the app
@@ -17,9 +32,20 @@ def create_app(test_config=None):
     @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
     """
 
+    cors = CORS(app, resource={r"/api/*": {"origins": "*"}})
+
     """
     @TODO: Use the after_request decorator to set Access-Control-Allow
     """
+
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type, Authorization')
+        response.headers.add('Access-Control-Allow-Methods',
+                             'GET,PATCH,POST,PUT,DELETE,OPTIONS')
+        response.headers.add('Content-Type', 'application/json')
+        return response
 
     """
     @TODO:
@@ -27,6 +53,19 @@ def create_app(test_config=None):
     for all available categories.
     """
 
+    @app.route('/categories')
+    def get_categories():
+        '''get all categories'''
+        categories = Category.query.all()
+        category_dict = {category.id: category.type for category in categories}
+        # no categories available, return a 404 error
+        if len(category_dict) == 0:
+            abort(404)
+        # result
+        return jsonify({
+            'success': True,
+            'categories': category_dict
+        })
 
     """
     @TODO:
@@ -99,4 +138,3 @@ def create_app(test_config=None):
     """
 
     return app
-
