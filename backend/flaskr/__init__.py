@@ -2,6 +2,7 @@ import os
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from sqlalchemy import func
 import random
 
 from models import setup_db, Question, Category
@@ -179,6 +180,28 @@ def create_app(test_config=None):
     Try using the word "title" to start.
     """
 
+    # POST end-point to search for a question in database
+    # returns: related search terms
+    @app.route('/questions/search', methods=['POST'])
+    def search_question():
+        # get Search term from Json, and then search based on the search term
+        # Return data to the format to json
+        searchTerm = request.get_json()['searchTerm']
+        data_searched = Question.query.filter(
+            Question.question.ilike('%{}%'.format(searchTerm))).all()
+        formatted_questions = paginate(request, data_searched)
+        category_all = Category.query.all()
+        categories = [category.format() for category in category_all]
+        formatted_categories = {
+            k: v for category in categories for k, v in category.items()}
+        return jsonify({
+            'success': True,
+            'questions': formatted_questions,
+            'total_questions_found': len(data_searched),
+            'current_category': "",
+            'categories': formatted_categories
+        })
+
     """
     @TODO:
     Create a GET endpoint to get questions based on category.
@@ -187,6 +210,34 @@ def create_app(test_config=None):
     categories in the left column will cause only questions of that
     category to be shown.
     """
+
+    @app.route('/categories/<int:category_id>/questions')
+    def get_specific_question(category_id):
+        questions_per_category = Question.query.filter(
+            Question.category == category_id).all()
+        if len(questions_per_category) == 0:
+            abort(404)
+
+            formatted_questions = paginate(request, questions_per_category)
+
+            categories = Category.query.all()
+            category_dict = {
+                category.id: category.type for category in categories}
+
+            # print(category_id, questions_per_category,
+            #       formatted_questions, len(questions_per_category))
+
+        try:
+
+            return jsonify({
+                'success': True,
+                'questions': formatted_questions,
+                'total_questions': len(questions_per_category),
+                'category': category_id,
+                'categories': category_dict
+            })
+        except:
+            abort(404)
 
     """
     @TODO:
@@ -200,10 +251,99 @@ def create_app(test_config=None):
     and shown whether they were correct or not.
     """
 
+    # play quiz game endpoint
+    @app.route('/quizzes', methods=['POST'])
+    def play_quiz():
+        # load the request body
+        body = request.get_json()
+        if not body:
+            # posting an envalid json should return a 400 error.
+            abort(400)
+        if (body.get('previous_questions') is None or body.get('quiz_category') is None):
+            # if previous_questions or quiz_category are missing, return a 400 error
+            abort(400)
+        previous_questions = body.get('previous_questions')
+        if type(previous_questions) != list:
+            # previous_questions should be a list, otherwise return a 400 error
+            abort(400)
+
+        category = body.get('quiz_category')
+        category_id = int(category['id'])
+
+        # confirm there are questions to be played.
+        if category_id == 0:
+            # if category id is 0, query the database for a random object of all questions
+            selection = Question.query.order_by(func.random())
+        else:
+            # load a random object of questions from the specified category
+            selection = Question.query.filter(
+                Question.category == category_id).order_by(func.random())
+
+        if not selection.all():
+            # No questions available, abort with a 404 error
+            abort(404)
+        else:
+            # load a random question from our previous query, which is not in the previous_questions list.
+            question = selection.filter(Question.id.notin_(
+                previous_questions)).first()
+        if question is None:
+            # all questions were played, returning a success message without a question signifies the end of the game
+            return jsonify({
+                'success': True
+            })
+
+        # Found a question that wasn't played before, let's return it to the user
+        return jsonify({
+            'success': True,
+            'question': question.format()
+        })
+
     """
     @TODO:
     Create error handlers for all expected errors
     including 404 and 422.
     """
+
+    # error handlers
+
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({
+            'success': False,
+            'error': 400,
+            'message': 'bad request'
+        }), 400
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({
+            'success': False,
+            'error': 404,
+            'message': 'resource not found'
+        }), 404
+
+    @app.errorhandler(405)
+    def not_allowed(error):
+        return jsonify({
+            'success': False,
+            'error': 405,
+            'message': 'method not allowed'
+        }), 405
+
+    @app.errorhandler(422)
+    def unprocessable(error):
+        return jsonify({
+            'success': False,
+            'error': 422,
+            'message': 'unprocessable'
+        }), 422
+
+    @app.errorhandler(500)
+    def server_error(error):
+        return jsonify({
+            'success': False,
+            'error': 500,
+            'message': 'internal error'
+        }), 500
 
     return app
