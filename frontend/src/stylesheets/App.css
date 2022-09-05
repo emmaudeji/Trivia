@@ -11,6 +11,7 @@
 
 .App-header > h1 {
   color: dodgerblue;
+  transition: 0.3s;
 }
 
 .App-intro {
@@ -19,11 +20,13 @@
 
 h2 {
   text-align: center;
+  transition: 0.3s;
 }
 
 li {
   text-align: center;
   margin: 5px 0px;
+  transition: 0.3s;
 }
 
 ul {
@@ -36,4 +39,10 @@ form {
   flex-direction: column;
   width: 80%;
   margin: auto;
+}
+
+h1:hover,
+h2:hover,
+li:hover {
+  scale: 1.1;
 }

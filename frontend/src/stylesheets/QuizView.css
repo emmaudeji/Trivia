@@ -24,8 +24,16 @@
     margin-top: 5px;
     background-color: dodgerblue;
     color: white;
-    padding: 3px 5px;
+    padding: 5px 7px;
     align-self: center;
+    transition: 0.3s;
+    border: none;
+    outline: none;
+    border-radius: 5px;
+}
+
+.button:hover {
+    background-color: rgb(2, 86, 221);
 }
 
 div.button {
