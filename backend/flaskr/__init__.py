@@ -1,8 +1,9 @@
 import os
-from flask import Flask, request, abort, jsonify
+from flask import Flask, request, abort, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import func
+
 import random
 
 from models import setup_db, Question, Category
@@ -211,21 +212,25 @@ def create_app(test_config=None):
     category to be shown.
     """
 
+    # Get the questions based on a category
     @app.route('/categories/<int:category_id>/questions')
     def get_specific_question(category_id):
+        # get category by id
+        category = Category.query.filter(
+            Category.id == category_id).one_or_none()
+        # abort with a 404 error if category is unavailable
+        if category is None:
+            abort(404)
+        # get questions in category with id='category_id'
         questions_per_category = Question.query.filter(
             Question.category == category_id).all()
         if len(questions_per_category) == 0:
             abort(404)
 
-            formatted_questions = paginate(request, questions_per_category)
+        formatted_questions = paginate(request, questions_per_category)
 
-            categories = Category.query.all()
-            category_dict = {
-                category.id: category.type for category in categories}
-
-            # print(category_id, questions_per_category,
-            #       formatted_questions, len(questions_per_category))
+        # format category
+        category_dict = {category.id: category.type}
 
         try:
 
@@ -234,10 +239,10 @@ def create_app(test_config=None):
                 'questions': formatted_questions,
                 'total_questions': len(questions_per_category),
                 'category': category_id,
-                'categories': category_dict
+                'categoy': category_dict
             })
         except:
-            abort(404)
+            abort(400)
 
     """
     @TODO:
