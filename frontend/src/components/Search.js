@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
 class Search extends Component {
   state = {
-    query: '',
+    query: "",
   };
 
   getInfo = (event) => {
@@ -20,11 +20,11 @@ class Search extends Component {
     return (
       <form onSubmit={this.getInfo}>
         <input
-          placeholder='Search questions...'
+          placeholder="Search questions..."
           ref={(input) => (this.search = input)}
           onChange={this.handleInputChange}
         />
-        <input type='submit' value='Submit' className='button' />
+        <input type="submit" value="Submit" className="button" />
       </form>
     );
   }
