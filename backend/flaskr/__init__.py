@@ -185,22 +185,23 @@ def create_app(test_config=None):
     # returns: related search terms
     @app.route('/questions/search', methods=['POST'])
     def search_question():
-        # get Search term from Json, and then search based on the search term
-        # Return data to the format to json
-        searchTerm = request.get_json()['searchTerm']
-        data_searched = Question.query.filter(
-            Question.question.ilike('%{}%'.format(searchTerm))).all()
-        formatted_questions = paginate(request, data_searched)
-        category_all = Category.query.all()
-        categories = [category.format() for category in category_all]
-        formatted_categories = {
-            k: v for category in categories for k, v in category.items()}
+        '''search for a question in the database'''
+        body = request.get_json()
+        if not body:
+            # posting an envalid json should return a 400 error.
+            abort(400)
+        if body.get('searchTerm'):
+            # searchTerm is available in the request body
+            search_term = body.get('searchTerm')
+            result_from_search = Question.query.filter(
+                Question.question.ilike(f'%{search_term}%')).all()
+            formatted_questions = paginate(request, result_from_search)
+
         return jsonify({
             'success': True,
             'questions': formatted_questions,
-            'total_questions_found': len(data_searched),
-            'current_category': "",
-            'categories': formatted_categories
+            'totalQuestions': len(result_from_search),
+            'current_category': ""
         })
 
     """
