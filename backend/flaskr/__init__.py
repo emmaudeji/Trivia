@@ -1,8 +1,10 @@
+from crypt import methods
 import os
-from flask import Flask, request, abort, jsonify, current_app
+from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import func
+import random
 
 from models import setup_db, Question, Category
 
@@ -29,7 +31,8 @@ def create_app(test_config=None):
     setup_db(app)
 
     """
-    @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+    @TODO: Set up CORS. Allow '*' for origins.
+    Delete the sample route after completing the TODOs
     """
 
     cors = CORS(app, resource={r"/api/*": {"origins": "*"}})
@@ -53,7 +56,7 @@ def create_app(test_config=None):
     for all available categories.
     """
 
-    @app.route('/categories')
+    @app.route('/categories', methods=['GET'])
     def get_categories():
         '''get all categories'''
         categories = Category.query.all()
@@ -76,7 +79,8 @@ def create_app(test_config=None):
 
     TEST: At this point, when you start the application
     you should see questions and categories generated,
-    ten questions per page and pagination at the bottom of the screen for three pages.
+    ten questions per page and pagination at the bottom of the
+    screen for three pages.
     Clicking on the page numbers should update the questions.
     """
 
@@ -108,7 +112,8 @@ def create_app(test_config=None):
     @TODO:
     Create an endpoint to DELETE question using a question ID.
 
-    TEST: When you click the trash icon next to a question, the question will be removed.
+    TEST: When you click the trash icon next to a question, the question
+    will be removed.
     This removal will persist in the database and when you refresh the page.
     """
 
@@ -142,7 +147,8 @@ def create_app(test_config=None):
     category, and difficulty score.
 
     TEST: When you submit a question on the "Add" tab,
-    the form will clear and the question will appear at the end of the last page
+    the form will clear and the question will appear at the end
+    of the last page
     of the questions list in the "List" tab.
     """
 
@@ -195,11 +201,17 @@ def create_app(test_config=None):
                 Question.question.ilike(f'%{search_term}%')).all()
             formatted_questions = paginate(request, result_from_search)
 
+            # category_all = Category.query.all()
+            # categories = [category.format() for category in category_all]
+            # formatted_categories = {
+            #     k: v for category in categories for k, v in category.items()}
+
         return jsonify({
             'success': True,
             'questions': formatted_questions,
             'totalQuestions': len(result_from_search),
-            'current_category': ""
+            'current_category': "",
+            # 'categories': formatted_categories
         })
 
     """
@@ -263,8 +275,10 @@ def create_app(test_config=None):
         if not body:
             # posting an envalid json should return a 400 error.
             abort(400)
-        if (body.get('previous_questions') is None or body.get('quiz_category') is None):
-            # if previous_questions or quiz_category are missing, return a 400 error
+        if (body.get('previous_questions') is None or body.get(
+                'quiz_category') is None):
+            # if previous_questions or quiz_category are missing,
+            # return a 400 error
             abort(400)
         previous_questions = body.get('previous_questions')
         if type(previous_questions) != list:
@@ -276,7 +290,8 @@ def create_app(test_config=None):
 
         # confirm there are questions to be played.
         if category_id == 0:
-            # if category id is 0, query the database for a random object of all questions
+            # if category id is 0, query the database for a random object
+            # of all questions
             selection = Question.query.order_by(func.random())
         else:
             # load a random object of questions from the specified category
@@ -287,16 +302,19 @@ def create_app(test_config=None):
             # No questions available, abort with a 404 error
             abort(404)
         else:
-            # load a random question from our previous query, which is not in the previous_questions list.
+            # load a random question from our previous query,
+            # which is not in the previous_questions list.
             question = selection.filter(Question.id.notin_(
                 previous_questions)).first()
         if question is None:
-            # all questions were played, returning a success message without a question signifies the end of the game
+            # all questions were played, returning a success message
+            # without a question signifies the end of the game
             return jsonify({
                 'success': True
             })
 
-        # Found a question that wasn't played before, let's return it to the user
+        # Found a question that wasn't played before,
+        # let's return it to the user
         return jsonify({
             'success': True,
             'question': question.format()
@@ -331,7 +349,7 @@ def create_app(test_config=None):
         return jsonify({
             'success': False,
             'error': 405,
-            'message': 'method not allowed'
+            'message': 'Method not allowed'
         }), 405
 
     @app.errorhandler(422)
